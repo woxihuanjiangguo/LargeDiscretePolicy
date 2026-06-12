@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="Project page for LDiP: Large Discrete Policy for explicit behavior modeling with stochastic iterative scoring."
+    />
+    <title>LDiP | Large Discrete Policy</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="site-header"></header>
+
+    <main id="top">
+      <section class="hero">
+        <h1>Large Discrete Policy: Advancing Explicit Behavior Modeling with Stochastic Iterative Scoring</h1>
+
+        <p class="authors">
+          <strong>Zhenxin Li<sup>1,&dagger;</sup>, Nadine Chang<sup>2</sup>, Xinglong Sun<sup>2</sup>, Jingde Chen<sup>2</sup>, Wenhao Yao<sup>1</sup>, Zi Wang<sup>2</sup></strong><br />
+          <strong>Maying Shen<sup>2</sup>, Yu-Gang Jiang<sup>1</sup>, Zuxuan Wu<sup>1</sup>, Shiyi Lan<sup>2</sup>, Jose M. Alvarez<sup>2</sup></strong><br />
+          <span><sup>1</sup>Fudan University &nbsp;&nbsp; <sup>2</sup>NVIDIA</span>
+          <span class="note"><sup>&dagger;</sup>Work done during an internship at NVIDIA.</span>
+        </p>
+
+        <div class="actions" aria-label="Project links">
+          <span class="button is-disabled" aria-disabled="true">arxiv</span>
+          <span class="button secondary is-disabled" aria-disabled="true">Code</span>
+          <span class="button secondary is-disabled" aria-disabled="true">BibTeX</span>
+        </div>
+      </section>
+
+      <section id="abstract" class="content-section section-narrow">
+        <h2 class="section-title">Abstract</h2>
+        <p>
+          Behavior policies are often formulated as continuous generative models, whose iterative denoising processes are expressive but difficult to interpret and prone to producing implausible actions. We propose the
+          <span class="keyword-highlight">Large Discrete Policy (LDiP)</span>, a fully discrete behavior modeling framework that selects actions from a large vocabulary of physically plausible candidates.
+        </p>
+        <p>
+          Rather than perturbing actions, LDiP improves expressivity through
+          <span class="keyword-highlight">stochastic iterative scoring</span>: it progressively re-scores and prunes candidates with score-space stochasticity, enabling fine-grained ranking and exploration among plausible actions while preserving an explicit decision process. Across end-to-end planning, closed-loop driving, robotic manipulation, and vision-language-action settings, LDiP consistently outperforms strong discrete and continuous baselines in autonomous driving, and exceeds or matches continuous generative policies in robotic manipulation.
+        </p>
+      </section>
+
+      <section id="motivation" class="content-section section-wide">
+        <h2 class="section-title">Motivation</h2>
+        <p class="motivation-text">
+          Continuous denoising policies offer strong expressivity, but their action generation process is implicit and may generate physically implausible actions. One-shot discrete policies are explicit and interpretable, yet can be bottlenecked by single-pass ranking over many near-optimal candidates. LDiP keeps the action vocabulary fixed and plausible, then makes the scoring process deeper and more expressive.
+        </p>
+        <figure class="plain-figure">
+          <img
+            src="assets/teaser.jpg"
+            alt="Paradigms for behavior modeling policies comparing iterative denoising, one-shot discrete policies, and LDiP."
+          />
+        </figure>
+      </section>
+
+      <section id="method" class="content-section section-wide">
+        <h2 class="section-title">Method Overview</h2>
+
+        <div class="method-grid">
+          <article>
+            <div class="step-heading">
+              <span>1</span>
+              <h3>Build a Large Action Vocabulary</h3>
+            </div>
+            <p>
+              Offline demonstrations are segmented into fixed-horizon action chunks and clustered into a large vocabulary of physically plausible candidates.
+            </p>
+          </article>
+          <article>
+            <div class="step-heading">
+              <span>2</span>
+              <h3>Score Candidate Actions</h3>
+            </div>
+            <p>
+              Candidate actions are tokenized and decoded given visual observations, and optionally language tokens with a Transformer decoder, before the MLP scores each candidate.
+            </p>
+          </article>
+          <article>
+            <div class="step-heading">
+              <span>3</span>
+              <h3>Iteratively Prune and Re-score</h3>
+            </div>
+            <p>
+              LDiP progressively keeps top candidates, re-scores the smaller set, and narrows the decision until one executable action remains.
+            </p>
+          </article>
+          <article>
+            <div class="step-heading">
+              <span>4</span>
+              <h3>Add Stochasticity in Score Space</h3>
+            </div>
+            <p>
+              During training, Gumbel noises are applied to scores before top-k selection, encouraging exploration among plausible candidates without corrupting actions.
+            </p>
+          </article>
+        </div>
+
+        <figure class="plain-figure">
+          <img
+            src="assets/arch.jpg"
+            alt="LDiP architecture with condition generation, action tokenizer, Transformer decoder, stochastic scoring, and iterative action decoding."
+          />
+        </figure>
+      </section>
+
+      <section id="results" class="content-section section-wide">
+        <h2 class="section-title">Results</h2>
+        <p class="section-intro">
+          We first visualize the NAVSIM/Navtest iterative scoring process: early stages preserve diverse plausible futures, while later stages concentrate on scene-consistent trajectories.
+        </p>
+        <p class="visual-caption">
+          <span class="legend-item"><span class="legend-dot selected"></span>Selected trajectory</span>
+          <span class="legend-item"><span class="legend-dot human"></span>Human trajectory</span>
+          <span class="legend-item"><span class="legend-dot vocabulary"></span>Remaining vocabulary</span>
+        </p>
+
+        <figure class="plain-figure">
+          <img
+            src="assets/vis_navsim.jpg"
+            alt="NAVSIM iterative scoring visualizations on Navtest examples."
+          />
+        </figure>
+
+        <p class="visual-caption video-caption">
+          <strong>PushT and ToolHang rollouts.</strong> Each video is split into two views: the left side shows final-stage action proposals, and the right side shows the final selected action.
+        </p>
+        <div class="video-grid video-intro" aria-label="Qualitative rollout examples">
+          <article>
+            <video autoplay loop muted playsinline controls>
+              <source src="assets/vis_pusht_1.mp4" type="video/mp4" />
+            </video>
+          </article>
+          <article>
+            <video autoplay loop muted playsinline controls>
+              <source src="assets/vis_pusht_2.mp4" type="video/mp4" />
+            </video>
+          </article>
+          <article>
+            <video autoplay loop muted playsinline controls>
+              <source src="assets/vis_pusht_3.mp4" type="video/mp4" />
+            </video>
+          </article>
+          <article>
+            <video autoplay loop muted playsinline controls>
+              <source src="assets/vis_tool_1.mp4" type="video/mp4" />
+            </video>
+          </article>
+          <article>
+            <video autoplay loop muted playsinline controls>
+              <source src="assets/vis_tool_2.mp4" type="video/mp4" />
+            </video>
+          </article>
+          <article>
+            <video autoplay loop muted playsinline controls>
+              <source src="assets/vis_tool_3.mp4" type="video/mp4" />
+            </video>
+          </article>
+        </div>
+      </section>
+
+      <section id="bibtex" class="content-section section-narrow">
+        <h2 class="section-title">BibTeX</h2>
+        <pre><code>In Progress</code></pre>
+      </section>
+    </main>
+  </body>
+</html>
