@@ -1,0 +1,63 @@
+_target_: navsim.agents.ldip.ldip_agent.LDiPAgent
+_convert_: 'all'
+pdm_gt_path: ${oc.env:OPENSCENE_DATA_ROOT}/traj_pdm_v2/ori/navtrain_16384.pkl
+
+config:
+  _target_: navsim.agents.ldip.hydra_config.HydraARConfig
+  _convert_: 'all'
+  vocab_path: ${oc.env:NAVSIM_DEVKIT_ROOT}/traj_final/16384.npy
+  ckpt_path: ldip_vov_ckpt
+  vocab_size: 16384
+  lidar_seq_len: 4
+  sigma: 0.5
+  trajectory_imi_weight: 1.0
+  progress_weight: 2.0
+  version: ar
+  bundle_num_stages: 3
+  bundle_downsample: None
+  bundle_lengths:
+    - 512
+    - 16
+    - 1 # dummy padding
+  cross_only_decoder: True
+  decoder_checkpoint: True
+  vadv2_head_nlayers: 6
+  cnn_traj_tokenization: True
+  use_fixed_embedding: False
+  use_soft_sampling: True
+  sampling_temperature: 0.5
+
+  vocab_dropout: False
+  pg_loss: True
+  normalize_vocab_pos: True
+  ec_target: False
+  no_cond: True
+  extra_feat: True
+
+  camera_width: 2048
+  camera_height: 512
+  img_vert_anchors: 16
+  img_horz_anchors: 64
+  backbone_type: 'vov'
+
+  vov_ckpt: ${oc.env:OPENSCENE_DATA_ROOT}/models/dd3d_det_final.pth
+  lr_mult_backbone: 1.0
+
+  trajectory_sampling:
+    _target_: nuplan.planning.simulation.trajectory.trajectory_sampling.TrajectorySampling
+    _convert_: 'all'
+    time_horizon: 4
+    interval_length: 0.1
+
+checkpoint_path: null
+lr: 1e-4
+
+
+simulator:
+  _target_: navsim.planning.simulation.planner.pdm_planner.simulation.pdm_simulator.PDMSimulator
+  _convert_: 'all'
+  proposal_sampling:
+    _target_: nuplan.planning.simulation.trajectory.trajectory_sampling.TrajectorySampling
+    _convert_: 'all'
+    num_poses: 40
+    interval_length: 0.1

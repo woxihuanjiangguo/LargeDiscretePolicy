@@ -33,6 +33,7 @@ from navsim.agents.gtrs_dense.gtrs_agent import GTRSAgent
 from navsim.agents.gtrs_dense.hydra_features import state2traj
 from navsim.agents.transfuser.transfuser_agent import TransfuserAgent
 from navsim.agents.ztrs.ztrs_agent import ZTRSAgent
+from navsim.agents.ldip.ldip_agent import LDiPAgent
 from navsim.common.dataclasses import Trajectory
 from navsim.evaluate.pdm_score import transform_trajectory, get_trajectory_as_array
 
@@ -118,10 +119,78 @@ class AgentLightningModule(pl.LightningModule):
             return self.predict_step_combined(batch, batch_idx)
         if isinstance(self.agent, GTRSAgent) or isinstance(self.agent, ZTRSAgent):
             return self.predict_step_hydra(batch, batch_idx)
+        elif isinstance(self.agent, LDiPAgent):
+            return self.predict_step_hydra_ar(batch, batch_idx)
         elif isinstance(self.agent, DPAgent):
             return self.predict_step_dp_traj(batch, batch_idx)
         else:
             raise ValueError('unsupported agent')
+
+
+    def predict_step_hydra_ar(
+            self,
+            batch: Tuple[Dict[str, Tensor], Dict[str, Tensor]],
+            batch_idx: int
+    ):
+
+        features, targets, tokens = batch
+        self.agent.eval()
+        score_pred = {}
+        with torch.no_grad():
+            predictions = self.agent.forward(features)
+            poses = predictions["trajectory"].cpu().numpy()
+            stage_keys = []
+            for k in predictions.keys():
+                if 'stage' in k:
+                    stage_keys.append(k)
+            stage_keys = sorted(stage_keys)
+            for idx, stage in enumerate(stage_keys):
+                stage_predictions = predictions[stage]
+                if 'imi' in stage_predictions:
+                    score_pred[stage] = {
+                        'imi': stage_predictions['imi'].softmax(-1).log().cpu().numpy(),
+                        'no_at_fault_collisions': stage_predictions[
+                            "no_at_fault_collisions"].sigmoid().log().cpu().numpy(),
+                        'drivable_area_compliance': stage_predictions[
+                            'drivable_area_compliance'].sigmoid().log().cpu().numpy(),
+                        'time_to_collision_within_bound': stage_predictions[
+                            'time_to_collision_within_bound'].sigmoid().log().cpu().numpy(),
+                        'ego_progress': stage_predictions['ego_progress'].sigmoid().log().cpu().numpy(),
+                        'driving_direction_compliance': stage_predictions[
+                            'driving_direction_compliance'].sigmoid().log().cpu().numpy(),
+                        'lane_keeping': stage_predictions['lane_keeping'].sigmoid().log().cpu().numpy(),
+                        'traffic_light_compliance': stage_predictions[
+                            'traffic_light_compliance'].sigmoid().log().cpu().numpy(),
+                    }
+                else:
+                    score_pred[stage] = {
+                        'scores': stage_predictions['scores'].sigmoid().cpu().numpy(),
+                    }
+                if idx == (len(stage_keys) - 1):
+                    if stage_predictions['trajectory_vocab'].cpu().numpy().shape[1] < 2000:
+                        score_pred[stage]['trajectory_vocab'] = stage_predictions['trajectory_vocab'].cpu().numpy()
+                    else:
+                        pass
+
+        if poses.shape[1] == 40:
+            interval_length = 0.1
+        else:
+            interval_length = 0.5
+
+        result = {}
+        for idx, (pose, token) in enumerate(zip(poses, tokens)):
+            score_pred_curr = {}
+            for stage, stage_scores in score_pred.items():
+                score_pred_curr[stage] = {}
+                for k, v in stage_scores.items():
+                    score_pred_curr[stage][k] = v[idx]
+
+            result[token] = {
+                'trajectory': Trajectory(pose, TrajectorySampling(time_horizon=4, interval_length=interval_length)),
+                'score_pred': score_pred_curr
+            }
+
+        return result
 
     def predict_step_dp_traj(
             self,

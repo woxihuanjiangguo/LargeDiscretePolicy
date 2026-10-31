@@ -6,8 +6,8 @@
 Clone the repository
 
 ```bash
-git clone https://github.com/NVlabs/GTRS.git
-cd GTRS
+git clone https://github.com/woxihuanjiangguo/LargeDiscretePolicy.git
+cd LargeDiscretePolicy
 ```
 
 ### 2. Download the dataset
@@ -64,7 +64,7 @@ wget https://huggingface.co/Zzxxxxxxxx/gtrs/resolve/main/dd3d_det_final.pth
 The final folder should have the following structure:
 ```angular2html
 ~/navsim_workspace
-├── GTRS (containing the devkit)
+├── LargeDiscretePolicy (containing the devkit)
 ├── exp
 └── dataset
     ├── maps
@@ -116,7 +116,7 @@ Based on the structure above, the environment variables need to be defined as:
 export NUPLAN_MAP_VERSION="nuplan-maps-v1.0"
 export NUPLAN_MAPS_ROOT="$HOME/navsim_workspace/dataset/maps"
 export NAVSIM_EXP_ROOT="$HOME/navsim_workspace/exp"
-export NAVSIM_DEVKIT_ROOT="$HOME/navsim_workspace/GTRS"
+export NAVSIM_DEVKIT_ROOT="$HOME/navsim_workspace/LargeDiscretePolicy"
 export OPENSCENE_DATA_ROOT="$HOME/navsim_workspace/dataset"
 export NAVSIM_TRAJPDM_ROOT="$HOME/navsim_workspace/dataset/traj_pdm_v2"
 ```
@@ -134,8 +134,8 @@ Finally, install navsim.
 To this end, create a new environment and install the required dependencies:
 
 ```bash
-conda env create --name conda_gtrs -f environment.yml
-conda activate conda_gtrs
+conda env create --name conda_ldip -f environment.yml
+conda activate conda_ldip
 pip install --upgrade diffusers[torch]
 pip install -e .
 ```
